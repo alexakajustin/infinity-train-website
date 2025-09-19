@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tree & Vegetation Generator - Infinity Train</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Arial", sans-serif;
+        background: linear-gradient(135deg, #2d5016 0%, #1a3009 100%);
+        min-height: 100vh;
+        color: white;
+      }
+
+      .container {
+        display: grid;
+        grid-template-columns: 350px 1fr;
+        height: 100vh;
+        gap: 20px;
+        padding: 20px;
+      }
+
+      .controls {
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        padding: 20px;
+        overflow-y: auto;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .canvas-container {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 15px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        justify-content: center;
+        align-items: center;
+      }
+
+      canvas {
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        background: #1a4d0a;
+      }
+
+      .control-group {
+        margin-bottom: 25px;
+      }
+
+      .control-group h3 {
+        color: #4caf50;
+        margin-bottom: 15px;
+        font-size: 16px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .slider-container {
+        margin-bottom: 15px;
+      }
+
+      .slider-label {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 14px;
+        color: #e0e0e0;
+      }
+
+      input[type="range"] {
+        width: 100%;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.2);
+        outline: none;
+        border-radius: 3px;
+        appearance: none;
+      }
+
+      input[type="range"]::-webkit-slider-thumb {
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        background: #4caf50;
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+      }
+
+      .checkbox-container {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: #4caf50;
+      }
+
+      .generate-btn {
+        width: 100%;
+        padding: 12px;
+        background: linear-gradient(45deg, #4caf50, #2e7d32);
+        border: none;
+        border-radius: 8px;
+        color: white;
+        font-weight: bold;
+        cursor: pointer;
+        font-size: 16px;
+        margin-top: 20px;
+        transition: all 0.3s ease;
+      }
+
+      .generate-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      .header h1 {
+        font-size: 24px;
+        background: linear-gradient(45deg, #4caf50, #81c784);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .layer-mode {
+        display: flex;
+        gap: 5px;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+      }
+
+      .layer-btn {
+        flex: 1;
+        padding: 6px 8px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+        color: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 12px;
+        min-width: 60px;
+      }
+
+      .layer-btn.active {
+        background: #4caf50;
+        color: #000;
+      }
+
+      .info-panel {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 15px;
+        border-left: 3px solid #4caf50;
+      }
+
+      .legend {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        font-size: 11px;
+        margin-top: 10px;
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .legend-color {
+        width: 12px;
+        height: 12px;
+        border-radius: 2px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        font-size: 11px;
+        color: #b0b0b0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="controls">
+        <div class="header">
+          <h1>Vegetation Generator</h1>
+          <p style="font-size: 12px; color: #b0b0b0">
+            Infinity Train - Trees & Grass
+          </p>
+        </div>
+
+        <div class="layer-mode">
+          <button class="layer-btn active" data-layer="all">All</button>
+          <button class="layer-btn" data-layer="trees">Trees</button>
+          <button class="layer-btn" data-layer="grass">Grass</button>
+          <button class="layer-btn" data-layer="roads">Roads</button>
+        </div>
+
+        <div class="control-group">
+          <h3>Tree Settings</h3>
+          <div class="slider-container">
+            <div class="slider-label">
+              <span>Tree Density</span>
+              <span id="treeDensityValue">0.5</span>
+            </div>
+            <input
+              type="range"
+              id="treeDensity"
+              min="0.1"
+              max="1"
+              step="0.1"
+              value="0.5"
+            />
+          </div>
+          <div class="slider-container">
+            <div class="slider-label">
+              <span>Min Tree Distance</span>
+              <span id="minTreeDistanceValue">8</span>
+            </div>
+            <input
+              type="range"
+              id="minTreeDistance"
+              min="3"
+              max="20"
+              value="8"
+            />
+          </div>
+          <div class="slider-container">
+            <div class="slider-label">
+              <span>Cluster Radius</span>
+              <span id="clusterRadiusValue">25</span>
+            </div>
+            <input
+              type="range"
+              id="clusterRadius"
+              min="10"
+              max="50"
+              value="25"
+            />
+          </div>
+          <div class="slider-container">
+            <div class="slider-label">
+              <span>Cluster Size</span>
+              <span id="clusterSizeValue">6</span>
+            </div>
+            <input type="range" id="clusterSize" min="2" max="12" value="6" />
+          </div>
+        </div>
+
+        <div class="control-group">
+          <h3>Grass Settings</h3>
+          <div class="checkbox-container">
+            <input type="checkbox" id="grassPatches" checked />
+            <label>Spawn in Patches</label>
+          </div>
+          <div class="slider-container">
+            <div class="slider-label">
+              <span>Grass Density</span>
+              <span id="grassDensityValue">0.3</span>
+            </div>
+            <input
+              type="range"
+              id="grassDensity"
+              min="0.1"
+              max="0.8"
+              step="0.1"
+              value="0.3"
+            />
+          </div>
+          <div class="slider-container">
+            <div class="slider-label">
+              <span>Patch Size</span>
+              <span id="patchSizeValue">20</span>
+            </div>
+            <input type="range" id="patchSize" min="5" max="40" value="20" />
+          </div>
+          <div class="slider-container">
+            <div class="slider-label">
+              <span>Noise Scale</span>
+              <span id="noiseScaleValue">0.02</span>
+            </div>
+            <input
+              type="range"
+              id="noiseScale"
+              min="0.005"
+              max="0.05"
+              step="0.005"
+              value="0.02"
+            />
+          </div>
+        </div>
+
+        <div class="control-group">
+          <h3>Environment</h3>
+          <div class="slider-container">
+            <div class="slider-label">
+              <span>Road Offset</span>
+              <span id="roadOffsetValue">0.1</span>
+            </div>
+            <input
+              type="range"
+              id="roadOffset"
+              min="0.05"
+              max="0.3"
+              step="0.05"
+              value="0.1"
+            />
+          </div>
+          <div class="slider-container">
+            <div class="slider-label">
+              <span>Terrain Roughness</span>
+              <span id="terrainRoughnessValue">0.5</span>
+            </div>
+            <input
+              type="range"
+              id="terrainRoughness"
+              min="0.1"
+              max="1"
+              step="0.1"
+              value="0.5"
+            />
+          </div>
+        </div>
+
+        <button class="generate-btn" id="generateBtn">
+          Generate New Layout
+        </button>
+
+        <div class="info-panel">
+          <h4 style="color: #4caf50; margin-bottom: 8px">Generation Stats</h4>
+          <div class="stats">
+            <div>Trees: <span id="treeCount">-</span></div>
+            <div>Clusters: <span id="clusterCount">-</span></div>
+            <div>Grass Patches: <span id="grassPatchCount">-</span></div>
+            <div>Gen Time: <span id="genTime">-</span>ms</div>
+          </div>
+
+          <div class="legend">
+            <div class="legend-item">
+              <div class="legend-color" style="background: #2d5016"></div>
+              <span>Dense Trees</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: #4a7c59"></div>
+              <span>Scattered Trees</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: #8bc34a"></div>
+              <span>Grass Areas</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: #6d4c41"></div>
+              <span>Road/Path</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="canvas-container">
+        <canvas id="vegetationCanvas" width="600" height="600"></canvas>
+      </div>
+    </div>
+
+    <script>
+      class VegetationGenerator {
+        constructor() {
+          this.canvas = document.getElementById("vegetationCanvas");
+          this.ctx = this.canvas.getContext("2d");
+          this.size = 600;
+          this.worldSize = 512;
+          this.seed = 12345;
+          this.currentLayer = "all";
+
+          this.params = {
+            treeDensity: 0.5,
+            minTreeDistance: 8,
+            clusterRadius: 25,
+            clusterSize: 6,
+            grassDensity: 0.3,
+            grassPatches: true,
+            patchSize: 20,
+            noiseScale: 0.02,
+            roadOffset: 0.1,
+            terrainRoughness: 0.5,
+          };
+
+          this.trees = [];
+          this.clusters = [];
+          this.grassPatches = [];
+          this.terrain = null;
+
+          console.log("VegetationGenerator initialized");
+          this.generateTerrain();
+          this.setupEventListeners();
+          this.generate();
+        }
+
+        setupEventListeners() {
+          const sliders = [
+            "treeDensity",
+            "minTreeDistance",
+            "clusterRadius",
+            "clusterSize",
+            "grassDensity",
+            "patchSize",
+            "noiseScale",
+            "roadOffset",
+            "terrainRoughness",
+          ];
+
+          sliders.forEach((param) => {
+            const slider = document.getElementById(param);
+            const valueSpan = document.getElementById(param + "Value");
+
+            if (slider && valueSpan) {
+              slider.addEventListener("input", (e) => {
+                const value = parseFloat(e.target.value);
+                this.params[param] = value;
+                valueSpan.textContent = value;
+                this.generate();
+              });
+            }
+          });
+
+          document
+            .getElementById("grassPatches")
+            .addEventListener("change", (e) => {
+              this.params.grassPatches = e.target.checked;
+              this.generate();
+            });
+
+          document
+            .getElementById("generateBtn")
+            .addEventListener("click", () => {
+              this.seed = Math.floor(Math.random() * 1000000);
+              this.generateTerrain();
+              this.generate();
+            });
+
+          // Layer switching
+          document.querySelectorAll(".layer-btn").forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+              document
+                .querySelectorAll(".layer-btn")
+                .forEach((b) => b.classList.remove("active"));
+              e.target.classList.add("active");
+              this.currentLayer = e.target.dataset.layer;
+              this.render();
+            });
+          });
+        }
+
+        // Simple hash-based random for consistent results
+        random(seed) {
+          const x = Math.sin(seed) * 43758.5453;
+          return x - Math.floor(x);
+        }
+
+        // Perlin-like noise function for terrain and grass
+        noise(x, y) {
+          const ix = Math.floor(x);
+          const iy = Math.floor(y);
+          const fx = x - ix;
+          const fy = y - iy;
+
+          const hash = (x, y) => {
+            let n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+            return (n - Math.floor(n)) * 2 - 1;
+          };
+
+          const a = hash(ix, iy);
+          const b = hash(ix + 1, iy);
+          const c = hash(ix, iy + 1);
+          const d = hash(ix + 1, iy + 1);
+
+          const u = fx * fx * (3 - 2 * fx);
+          const v = fy * fy * (3 - 2 * fy);
+
+          const i1 = a * (1 - u) + b * u;
+          const i2 = c * (1 - u) + d * u;
+
+          return i1 * (1 - v) + i2 * v;
+        }
+
+        // Generate terrain heightmap (for internal state, not used for placement)
+        generateTerrain() {
+          this.terrain = new Float32Array(this.worldSize * this.worldSize);
+
+          for (let y = 0; y < this.worldSize; y++) {
+            for (let x = 0; x < this.worldSize; x++) {
+              let height = 0;
+              let amplitude = 1;
+              let frequency = 0.01;
+
+              // Multi-octave noise for terrain
+              for (let octave = 0; octave < 4; octave++) {
+                const sampleX = x * frequency + this.seed * 0.001;
+                const sampleY = y * frequency + this.seed * 0.001;
+
+                const noiseValue = this.noise(sampleX, sampleY);
+                height += noiseValue * amplitude * this.params.terrainRoughness;
+
+                amplitude *= 0.5;
+                frequency *= 2;
+              }
+
+              this.terrain[y * this.worldSize + x] = height;
+            }
+          }
+        }
+
+        // Poisson disc sampling for tree placement
+        poissonDiscSampling() {
+          const points = [];
+          const activeList = [];
+          const grid = [];
+          const cellSize = this.params.minTreeDistance / Math.sqrt(2);
+          const gridWidth = Math.ceil(this.worldSize / cellSize);
+          const gridHeight = Math.ceil(this.worldSize / cellSize);
+
+          // Initialize grid
+          for (let i = 0; i < gridWidth * gridHeight; i++) {
+            grid[i] = null;
+          }
+
+          // Helper functions
+          const getGridIndex = (x, y) => {
+            const gridX = Math.floor(x / cellSize);
+            const gridY = Math.floor(y / cellSize);
+            return gridY * gridWidth + gridX;
+          };
+
+          const isValidPoint = (x, y) => {
+            if (x < 0 || x >= this.worldSize || y < 0 || y >= this.worldSize)
+              return false;
+
+            // Check road areas
+            const normalizedX = x / this.worldSize;
+            const normalizedY = y / this.worldSize;
+            if (
+              normalizedX < this.params.roadOffset ||
+              normalizedX > 1 - this.params.roadOffset ||
+              normalizedY < this.params.roadOffset ||
+              normalizedY > 1 - this.params.roadOffset
+            ) {
+              return false;
+            }
+
+            // Check minimum distance to other points
+            const gridX = Math.floor(x / cellSize);
+            const gridY = Math.floor(y / cellSize);
+
+            for (let dy = -2; dy <= 2; dy++) {
+              for (let dx = -2; dx <= 2; dx++) {
+                const checkX = gridX + dx;
+                const checkY = gridY + dy;
+
+                if (
+                  checkX >= 0 &&
+                  checkX < gridWidth &&
+                  checkY >= 0 &&
+                  checkY < gridHeight
+                ) {
+                  const checkIndex = checkY * gridWidth + checkX;
+                  const existingPoint = grid[checkIndex];
+
+                  if (existingPoint) {
+                    const dist = Math.sqrt(
+                      (x - existingPoint.x) ** 2 + (y - existingPoint.y) ** 2
+                    );
+                    if (dist < this.params.minTreeDistance) return false;
+                  }
+                }
+              }
+            }
+
+            return true;
+          };
+
+          // Generate first point
+          let attempts = 0;
+          while (attempts < 100) {
+            const firstX = this.random(this.seed + attempts) * this.worldSize;
+            const firstY =
+              this.random(this.seed + attempts + 1000) * this.worldSize;
+
+            if (isValidPoint(firstX, firstY)) {
+              const firstPoint = { x: firstX, y: firstY };
+              points.push(firstPoint);
+              activeList.push(firstPoint);
+              grid[getGridIndex(firstX, firstY)] = firstPoint;
+              break;
+            }
+            attempts++;
+          }
+
+          // Generate additional points
+          let seedOffset = 0;
+          while (activeList.length > 0) {
+            const randomIndex = Math.floor(
+              this.random(this.seed + seedOffset++) * activeList.length
+            );
+            const activePoint = activeList[randomIndex];
+
+            let foundValid = false;
+            for (let attempt = 0; attempt < 30; attempt++) {
+              const angle = this.random(this.seed + seedOffset++) * 2 * Math.PI;
+              const radius =
+                this.params.minTreeDistance +
+                this.random(this.seed + seedOffset++) *
+                  this.params.minTreeDistance;
+
+              const newX = activePoint.x + Math.cos(angle) * radius;
+              const newY = activePoint.y + Math.sin(angle) * radius;
+
+              if (
+                isValidPoint(newX, newY) &&
+                this.random(this.seed + seedOffset++) < this.params.treeDensity
+              ) {
+                const newPoint = { x: newX, y: newY };
+                points.push(newPoint);
+                activeList.push(newPoint);
+                grid[getGridIndex(newX, newY)] = newPoint;
+                foundValid = true;
+                break;
+              }
+            }
+
+            if (!foundValid) {
+              activeList.splice(randomIndex, 1);
+            }
+          }
+
+          return points;
+        }
+
+        // Create tree clusters from individual tree points
+        createTreeClusters(treePoints) {
+          const clusters = [];
+          const unprocessed = [...treePoints];
+          let seedOffset = 5000;
+
+          while (unprocessed.length > 0) {
+            const centerIndex = Math.floor(
+              this.random(this.seed + seedOffset++) * unprocessed.length
+            );
+            const center = unprocessed.splice(centerIndex, 1)[0];
+
+            const cluster = {
+              center: center,
+              trees: [center],
+              type: Math.floor(this.random(this.seed + seedOffset++) * 3), // 3 tree types
+            };
+
+            const targetSize = Math.min(
+              this.params.clusterSize,
+              2 +
+                Math.floor(
+                  this.random(this.seed + seedOffset++) *
+                    (this.params.clusterSize - 1)
+                )
+            );
+
+            for (
+              let i = unprocessed.length - 1;
+              i >= 0 && cluster.trees.length < targetSize;
+              i--
+            ) {
+              const candidate = unprocessed[i];
+              const distance = Math.sqrt(
+                (center.x - candidate.x) ** 2 + (center.y - candidate.y) ** 2
+              );
+
+              if (
+                distance <= this.params.clusterRadius &&
+                this.random(this.seed + seedOffset++) < 0.8
+              ) {
+                cluster.trees.push(candidate);
+                unprocessed.splice(i, 1);
+              }
+            }
+
+            clusters.push(cluster);
+          }
+
+          return clusters;
+        }
+
+        // Generate grass patches
+        generateGrassPatches() {
+          const patches = [];
+
+          if (!this.params.grassPatches) {
+            // Generate grass everywhere (simplified)
+            for (let y = 0; y < this.worldSize; y += 10) {
+              for (let x = 0; x < this.worldSize; x += 10) {
+                const normalizedX = x / this.worldSize;
+                const normalizedY = y / this.worldSize;
+
+                // Skip road areas
+                if (
+                  normalizedX < this.params.roadOffset ||
+                  normalizedX > 1 - this.params.roadOffset ||
+                  normalizedY < this.params.roadOffset ||
+                  normalizedY > 1 - this.params.roadOffset
+                ) {
+                  continue;
+                }
+
+                if (
+                  this.noise(
+                    x * this.params.noiseScale,
+                    y * this.params.noiseScale
+                  ) > 0.2
+                ) {
+                  patches.push({
+                    x,
+                    y,
+                    size: 5,
+                    density: this.params.grassDensity,
+                  });
+                }
+              }
+            }
+          } else {
+            // Generate distinct patches
+            let seedOffset = 10000;
+            const numPatches = Math.floor(
+              this.worldSize *
+                this.worldSize *
+                this.params.grassDensity *
+                0.0001
+            );
+
+            for (let i = 0; i < numPatches; i++) {
+              const x = this.random(this.seed + seedOffset++) * this.worldSize;
+              const y = this.random(this.seed + seedOffset++) * this.worldSize;
+
+              const normalizedX = x / this.worldSize;
+              const normalizedY = y / this.worldSize;
+
+              // Skip road areas
+              if (
+                normalizedX < this.params.roadOffset ||
+                normalizedX > 1 - this.params.roadOffset ||
+                normalizedY < this.params.roadOffset ||
+                normalizedY > 1 - this.params.roadOffset
+              ) {
+                continue;
+              }
+
+              patches.push({
+                x,
+                y,
+                size:
+                  this.params.patchSize *
+                  (0.5 + this.random(this.seed + seedOffset++) * 0.5),
+                density: this.params.grassDensity,
+              });
+            }
+          }
+
+          return patches;
+        }
+
+        generate() {
+          console.log("Generating vegetation...");
+          const startTime = performance.now();
+
+          try {
+            // Generate tree positions using Poisson disc sampling
+            const treePoints = this.poissonDiscSampling();
+
+            // Create clusters from tree points
+            this.clusters = this.createTreeClusters(treePoints);
+            this.trees = treePoints;
+
+            // Generate grass patches
+            this.grassPatches = this.generateGrassPatches();
+
+            this.render();
+
+            const endTime = performance.now();
+            document.getElementById("genTime").textContent = Math.round(
+              endTime - startTime
+            );
+            document.getElementById("treeCount").textContent =
+              this.trees.length;
+            document.getElementById("clusterCount").textContent =
+              this.clusters.length;
+            document.getElementById("grassPatchCount").textContent =
+              this.grassPatches.length;
+
+            console.log("Vegetation generated successfully");
+          } catch (error) {
+            console.error("Error generating vegetation:", error);
+          }
+        }
+
+        render() {
+          this.ctx.clearRect(0, 0, this.size, this.size);
+
+          // Background (terrain base)
+          this.ctx.fillStyle = "#1a4d0a";
+          this.ctx.fillRect(0, 0, this.size, this.size);
+
+          // Render road areas
+          if (this.currentLayer === "all" || this.currentLayer === "roads") {
+            this.ctx.fillStyle = "#6d4c41";
+            const roadWidth = this.params.roadOffset * this.size;
+
+            // Horizontal roads
+            this.ctx.fillRect(0, 0, this.size, roadWidth);
+            this.ctx.fillRect(0, this.size - roadWidth, this.size, roadWidth);
+
+            // Vertical roads
+            this.ctx.fillRect(0, 0, roadWidth, this.size);
+            this.ctx.fillRect(this.size - roadWidth, 0, roadWidth, this.size);
+          }
+
+          // Render grass patches
+          if (this.currentLayer === "all" || this.currentLayer === "grass") {
+            this.grassPatches.forEach((patch) => {
+              const screenX = (patch.x / this.worldSize) * this.size;
+              const screenY = (patch.y / this.worldSize) * this.size;
+              const screenSize = (patch.size / this.worldSize) * this.size;
+
+              this.ctx.fillStyle = `rgba(139, 195, 74, ${patch.density})`;
+              this.ctx.beginPath();
+              this.ctx.arc(screenX, screenY, screenSize, 0, Math.PI * 2);
+              this.ctx.fill();
+            });
+          }
+
+          // Render tree clusters
+          if (this.currentLayer === "all" || this.currentLayer === "trees") {
+            this.clusters.forEach((cluster, clusterIndex) => {
+              // Different colors for different tree types
+              const treeColors = ["#2d5016", "#4a7c59", "#1b5e20"];
+              const clusterColor = treeColors[cluster.type % treeColors.length];
+
+              cluster.trees.forEach((tree, treeIndex) => {
+                const screenX = (tree.x / this.worldSize) * this.size;
+                const screenY = (tree.y / this.worldSize) * this.size;
+
+                // Vary tree size slightly
+                const baseSize = 3;
+                const sizeVariation =
+                  1 +
+                  this.random(this.seed + clusterIndex * 100 + treeIndex) * 0.5;
+                const treeSize = baseSize * sizeVariation;
+
+                // Draw tree (simple circle for now)
+                this.ctx.fillStyle = clusterColor;
+                this.ctx.beginPath();
+                this.ctx.arc(screenX, screenY, treeSize, 0, Math.PI * 2);
+                this.ctx.fill();
+
+                // Add small highlight for cluster centers
+                if (tree === cluster.center) {
+                  this.ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+                  this.ctx.beginPath();
+                  this.ctx.arc(
+                    screenX,
+                    screenY,
+                    treeSize * 0.4,
+                    0,
+                    Math.PI * 2
+                  );
+                  this.ctx.fill();
+                }
+              });
+
+              // Draw cluster boundary (optional, for visualization)
+              if (this.currentLayer === "trees") {
+                const centerScreenX =
+                  (cluster.center.x / this.worldSize) * this.size;
+                const centerScreenY =
+                  (cluster.center.y / this.worldSize) * this.size;
+                const radiusScreen =
+                  (this.params.clusterRadius / this.worldSize) * this.size;
+
+                this.ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+                this.ctx.lineWidth = 1;
+                this.ctx.beginPath();
+                this.ctx.arc(
+                  centerScreenX,
+                  centerScreenY,
+                  radiusScreen,
+                  0,
+                  Math.PI * 2
+                );
+                this.ctx.stroke();
+              }
+            });
+          }
+
+          // Show Poisson disc sampling circles for individual trees
+          if (this.currentLayer === "trees") {
+            this.ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
+            this.ctx.lineWidth = 0.5;
+            this.trees.forEach((tree) => {
+              const screenX = (tree.x / this.worldSize) * this.size;
+              const screenY = (tree.y / this.worldSize) * this.size;
+              const minDistScreen =
+                (this.params.minTreeDistance / this.worldSize) * this.size;
+
+              this.ctx.beginPath();
+              this.ctx.arc(screenX, screenY, minDistScreen, 0, Math.PI * 2);
+              this.ctx.stroke();
+            });
+          }
+        }
+      }
+
+      // Initialize when DOM is ready
+      document.addEventListener("DOMContentLoaded", () => {
+        console.log("DOM loaded, initializing vegetation generator...");
+        try {
+          new VegetationGenerator();
+        } catch (error) {
+          console.error("Failed to initialize VegetationGenerator:", error);
+        }
+      });
+    </script>
+  </body>
+</html>
