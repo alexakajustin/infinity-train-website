@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Heights Generator - Infinity Train</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Arial", sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        color: white;
+      }
+
+      .container {
+        display: grid;
+        grid-template-columns: 350px 1fr;
+        height: 100vh;
+        gap: 20px;
+        padding: 20px;
+      }
+
+      .controls {
+        background: rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        padding: 20px;
+        overflow-y: auto;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .canvas-container {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 15px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        justify-content: center;
+        align-items: center;
+      }
+
+      canvas {
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        background: #333;
+        cursor: grab;
+      }
+
+      canvas:active {
+        cursor: grabbing;
+      }
+
+      .control-group {
+        margin-bottom: 25px;
+      }
+
+      .control-group h3 {
+        color: #64ffda;
+        margin-bottom: 15px;
+        font-size: 16px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .slider-container {
+        margin-bottom: 15px;
+      }
+
+      .slider-label {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 14px;
+        color: #e0e0e0;
+      }
+
+      input[type="range"] {
+        width: 100%;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.2);
+        outline: none;
+        border-radius: 3px;
+        appearance: none;
+      }
+
+      input[type="range"]::-webkit-slider-thumb {
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        background: #64ffda;
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+      }
+
+      .checkbox-container {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: #64ffda;
+      }
+
+      .generate-btn {
+        width: 100%;
+        padding: 12px;
+        background: linear-gradient(45deg, #64ffda, #00bcd4);
+        border: none;
+        border-radius: 8px;
+        color: white;
+        font-weight: bold;
+        cursor: pointer;
+        font-size: 16px;
+        margin-top: 20px;
+        transition: all 0.3s ease;
+      }
+
+      .generate-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(100, 255, 218, 0.4);
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      .header h1 {
+        font-size: 24px;
+        background: linear-gradient(45deg, #64ffda, #00bcd4);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .render-mode {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+      }
+
+      .mode-btn {
+        flex: 1;
+        padding: 8px 12px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+        color: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .mode-btn.active {
+        background: #64ffda;
+        color: #000;
+      }
+
+      .info-panel {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 15px;
+        border-left: 3px solid #64ffda;
+      }
+
+      .tip {
+        font-size: 11px;
+        color: #888;
+        margin-top: 5px;
+        font-style: italic;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="controls">
+        <div class="header">
+          <h1>Heights Generator</h1>
+          <p style="font-size: 12px; color: #b0b0b0">
+            Infinity Train - Procedural Terrain
+          </p>
+        </div>
+
+        <div class="render-mode">
+          <button class="mode-btn active" data-mode="heightmap">
+            Heightmap
+          </button>
+          <button class="mode-btn" data-mode="3d">3D Iso</button>
+        </div>
+
+        <div class="control-group">
+          <h3>Noise Parameters</h3>
+          <div class="slider-container">
+            <div class="slider-label">
+              <span>Scale</span>
+              <span id="scaleValue">50</span>
+            </div>
+            <input type="range" id="scale" min="10" max="200" value="50" />
+          </div>
+          <div class="slider-container">
+            <div class="slider-label">
+              <span>Octaves</span>
+              <span id="octavesValue">4</span>
+            </div>
+            <input type="range" id="octaves" min="1" max="8" value="4" />
+          </div>
+          <div class="slider-container">
+            <div class="slider-label">
+              <span>Persistence</span>
+              <span id="persistenceValue">0.5</span>
+            </div>
+            <input
+              type="range"
+              id="persistence"
+              min="0.1"
+              max="1"
+              step="0.1"
+              value="0.5"
+            />
+          </div>
+          <div class="slider-container">
+            <div class="slider-label">
+              <span>Lacunarity</span>
+              <span id="lacunarityValue">2</span>
+            </div>
+            <input
+              type="range"
+              id="lacunarity"
+              min="1"
+              max="4"
+              step="0.1"
+              value="2"
+            />
+          </div>
+        </div>
+
+        <div class="control-group">
+          <h3>Advanced Features</h3>
+          <div class="checkbox-container">
+            <input type="checkbox" id="enableAsymmetry" checked />
+            <label>Enable Asymmetry</label>
+          </div>
+          <div class="slider-container">
+            <div class="slider-label">
+              <span>Asymmetry Strength</span>
+              <span id="asymmetryValue">0.3</span>
+            </div>
+            <input
+              type="range"
+              id="asymmetryStrength"
+              min="0"
+              max="1"
+              step="0.1"
+              value="0.3"
+            />
+          </div>
+          <div class="checkbox-container">
+            <input type="checkbox" id="enableFalloff" checked />
+            <label>Enable Edge Falloff</label>
+          </div>
+          <div class="slider-container">
+            <div class="slider-label">
+              <span>Falloff Distance</span>
+              <span id="falloffValue">0.25</span>
+            </div>
+            <input
+              type="range"
+              id="falloffDistance"
+              min="0.05"
+              max="0.5"
+              step="0.05"
+              value="0.25"
+            />
+          </div>
+        </div>
+
+        <div class="control-group">
+          <h3>3D View Settings</h3>
+          <div class="slider-container">
+            <div class="slider-label">
+              <span>Height Scale</span>
+              <span id="heightScaleValue">1.0</span>
+            </div>
+            <input
+              type="range"
+              id="heightScale"
+              min="0.1"
+              max="1"
+              step="0.05"
+              value="1.0"
+            />
+            <div class="tip">Adjusts vertical exaggeration in 3D mode</div>
+          </div>
+          <div class="slider-container">
+            <div class="slider-label">
+              <span>View Angle</span>
+              <span id="viewAngleValue">10</span>
+            </div>
+            <input type="range" id="viewAngle" min="0" max="90" value="45" />
+            <div class="tip">Camera angle for isometric view</div>
+          </div>
+        </div>
+
+        <button class="generate-btn" id="generateBtn">
+          Generate New Terrain
+        </button>
+
+        <div class="info-panel">
+          <h4 style="color: #64ffda; margin-bottom: 8px">System Info</h4>
+          <div style="font-size: 12px; color: #b0b0b0">
+            <div>Resolution: 128x128</div>
+            <div>Generation Time: <span id="genTime">-</span>ms</div>
+            <div>Seed: <span id="currentSeed">12345</span></div>
+            <div style="margin-top: 8px; color: #64ffda">
+              3D Mode: Click + drag to rotate
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="canvas-container">
+        <canvas id="terrainCanvas" width="512" height="512"></canvas>
+      </div>
+    </div>
+
+    <script>
+      class HeightsGenerator {
+        constructor() {
+          this.canvas = document.getElementById("terrainCanvas");
+          this.ctx = this.canvas.getContext("2d");
+          this.resolution = 128;
+          this.seed = 12345;
+          this.renderMode = "heightmap";
+          this.heights = null;
+
+          // 3D rotation state
+          this.rotationX = 0;
+          this.rotationY = 0;
+          this.isDragging = false;
+          this.lastMouseX = 0;
+          this.lastMouseY = 0;
+
+          this.params = {
+            scale: 50,
+            octaves: 4,
+            persistence: 0.5,
+            lacunarity: 2.0,
+            asymmetryStrength: 0.3,
+            falloffDistance: 0.25,
+            enableAsymmetry: true,
+            enableFalloff: true,
+            heightScale: 1.0,
+            viewAngle: 10,
+          };
+
+          console.log("HeightsGenerator initialized");
+          this.setupEventListeners();
+          this.generate();
+        }
+
+        setupEventListeners() {
+          const sliders = [
+            "scale",
+            "octaves",
+            "persistence",
+            "lacunarity",
+            "asymmetryStrength",
+            "falloffDistance",
+            "heightScale",
+            "viewAngle",
+          ];
+
+          sliders.forEach((param) => {
+            const slider = document.getElementById(param);
+            const valueSpan = document.getElementById(param + "Value");
+
+            if (slider && valueSpan) {
+              slider.addEventListener("input", (e) => {
+                const value = parseFloat(e.target.value);
+                this.params[param] = value;
+                valueSpan.textContent = value;
+                this.generate();
+              });
+            }
+          });
+
+          document
+            .getElementById("enableAsymmetry")
+            .addEventListener("change", (e) => {
+              this.params.enableAsymmetry = e.target.checked;
+              this.generate();
+            });
+
+          document
+            .getElementById("enableFalloff")
+            .addEventListener("change", (e) => {
+              this.params.enableFalloff = e.target.checked;
+              this.generate();
+            });
+
+          document
+            .getElementById("generateBtn")
+            .addEventListener("click", () => {
+              this.seed = Math.floor(Math.random() * 1000000);
+              document.getElementById("currentSeed").textContent = this.seed;
+              this.generate();
+            });
+
+          // Mode switching
+          document.querySelectorAll(".mode-btn").forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+              document
+                .querySelectorAll(".mode-btn")
+                .forEach((b) => b.classList.remove("active"));
+              e.target.classList.add("active");
+              this.renderMode = e.target.dataset.mode;
+              this.generate();
+            });
+          });
+
+          // Mouse controls for 3D view
+          this.canvas.addEventListener("mousedown", (e) => {
+            if (this.renderMode === "3d") {
+              this.isDragging = true;
+              this.lastMouseX = e.clientX;
+              this.lastMouseY = e.clientY;
+            }
+          });
+
+          this.canvas.addEventListener("mousemove", (e) => {
+            if (this.isDragging && this.renderMode === "3d") {
+              const deltaX = e.clientX - this.lastMouseX;
+              const deltaY = e.clientY - this.lastMouseY;
+
+              this.rotationY += deltaX * 0.01;
+              this.rotationX += deltaY * 0.01;
+              this.rotationX = Math.max(-1, Math.min(1, this.rotationX));
+
+              this.lastMouseX = e.clientX;
+              this.lastMouseY = e.clientY;
+              this.render3D();
+            }
+          });
+
+          this.canvas.addEventListener("mouseup", () => {
+            this.isDragging = false;
+          });
+
+          this.canvas.addEventListener("mouseleave", () => {
+            this.isDragging = false;
+          });
+        }
+
+        noise(x, y) {
+          const ix = Math.floor(x);
+          const iy = Math.floor(y);
+          const fx = x - ix;
+          const fy = y - iy;
+
+          const hash = (x, y) => {
+            let n =
+              Math.sin(x * 12.9898 + y * 78.233 + this.seed * 0.001) *
+              43758.5453;
+            return (n - Math.floor(n)) * 2 - 1;
+          };
+
+          const a = hash(ix, iy);
+          const b = hash(ix + 1, iy);
+          const c = hash(ix, iy + 1);
+          const d = hash(ix + 1, iy + 1);
+
+          const u = fx * fx * (3 - 2 * fx);
+          const v = fy * fy * (3 - 2 * fy);
+
+          const i1 = a * (1 - u) + b * u;
+          const i2 = c * (1 - u) + d * u;
+
+          return i1 * (1 - v) + i2 * v;
+        }
+
+        fractalNoise(x, y) {
+          let value = 0;
+          let amplitude = 1;
+          let frequency = 1 / this.params.scale;
+          let maxValue = 0;
+
+          for (let i = 0; i < this.params.octaves; i++) {
+            let sampleX = x * frequency;
+            let sampleY = y * frequency;
+
+            if (this.params.enableAsymmetry) {
+              const angle = i * 0.7;
+              const cos = Math.cos(angle);
+              const sin = Math.sin(angle);
+              const rotX = sampleX * cos - sampleY * sin;
+              const rotY = sampleX * sin + sampleY * cos;
+
+              const scaleVar =
+                1 + Math.sin(i * 127.1) * 0.5 * this.params.asymmetryStrength;
+              sampleX = rotX * scaleVar;
+              sampleY = rotY * scaleVar;
+            }
+
+            const noiseValue = this.noise(sampleX, sampleY);
+            value += noiseValue * amplitude;
+            maxValue += amplitude;
+
+            amplitude *= this.params.persistence;
+            frequency *= this.params.lacunarity;
+          }
+
+          return value / maxValue;
+        }
+
+        calculateFalloff(x, y) {
+          if (!this.params.enableFalloff) return 1;
+
+          const normalizedX = x / this.resolution;
+          const normalizedY = y / this.resolution;
+
+          const distFromEdge = Math.min(
+            normalizedX / this.params.falloffDistance,
+            (1 - normalizedX) / this.params.falloffDistance,
+            normalizedY / this.params.falloffDistance,
+            (1 - normalizedY) / this.params.falloffDistance
+          );
+
+          const t = Math.max(0, Math.min(1, distFromEdge));
+          return t * t * (3 - 2 * t);
+        }
+
+        getTerrainColor(height) {
+          if (height < 0.2) {
+            return [30, 60, 200]; // Water - blue
+          } else if (height < 0.4) {
+            return [200, 180, 80]; // Sand - yellow
+          } else if (height < 0.7) {
+            return [40, 150, 30]; // Grass - green
+          } else {
+            const intensity = Math.floor(height * 255);
+            return [intensity, intensity, intensity]; // Mountain - gray
+          }
+        }
+
+        generate() {
+          console.log("Generating terrain...");
+          const startTime = performance.now();
+
+          try {
+            this.heights = new Float32Array(this.resolution * this.resolution);
+
+            for (let y = 0; y < this.resolution; y++) {
+              for (let x = 0; x < this.resolution; x++) {
+                let height = this.fractalNoise(x, y);
+                height = (height + 1) * 0.5;
+                height *= this.calculateFalloff(x, y);
+
+                this.heights[y * this.resolution + x] = height;
+              }
+            }
+
+            if (this.renderMode === "3d") {
+              this.render3D();
+            } else {
+              this.render2D();
+            }
+
+            const endTime = performance.now();
+            document.getElementById("genTime").textContent = Math.round(
+              endTime - startTime
+            );
+            console.log("Terrain generated successfully");
+          } catch (error) {
+            console.error("Error generating terrain:", error);
+          }
+        }
+
+        render2D() {
+          if (!this.heights) return;
+
+          const displaySize = 512;
+          this.canvas.width = displaySize;
+          this.canvas.height = displaySize;
+
+          const imageData = this.ctx.createImageData(displaySize, displaySize);
+          const data = imageData.data;
+
+          for (let y = 0; y < displaySize; y++) {
+            for (let x = 0; x < displaySize; x++) {
+              const hx = Math.floor((x / displaySize) * this.resolution);
+              const hy = Math.floor((y / displaySize) * this.resolution);
+              const height = this.heights[hy * this.resolution + hx];
+
+              const pixelIndex = (y * displaySize + x) * 4;
+              const [r, g, b] = this.getTerrainColor(height);
+
+              data[pixelIndex] = r;
+              data[pixelIndex + 1] = g;
+              data[pixelIndex + 2] = b;
+              data[pixelIndex + 3] = 255;
+            }
+          }
+
+          this.ctx.putImageData(imageData, 0, 0);
+        }
+
+        render3D() {
+          if (!this.heights) return;
+
+          const width = 512;
+          const height = 512;
+          this.canvas.width = width;
+          this.canvas.height = height;
+
+          this.ctx.fillStyle = "#1a1a2e";
+          this.ctx.fillRect(0, 0, width, height);
+
+          const centerX = width / 2;
+          const centerY = height / 2;
+          const scale = 3;
+
+          // Create isometric projection
+          const cos = Math.cos((this.params.viewAngle * Math.PI) / 180);
+          const sin = Math.sin((this.params.viewAngle * Math.PI) / 180);
+
+          // Rotation matrices
+          const cosY = Math.cos(this.rotationY);
+          const sinY = Math.sin(this.rotationY);
+          const cosX = Math.cos(this.rotationX);
+          const sinX = Math.sin(this.rotationX);
+
+          // Collect and sort points for proper depth rendering
+          const points = [];
+
+          for (let y = 0; y < this.resolution - 1; y++) {
+            for (let x = 0; x < this.resolution - 1; x++) {
+              const h1 =
+                this.heights[y * this.resolution + x] *
+                this.params.heightScale *
+                100;
+              const h2 =
+                this.heights[y * this.resolution + (x + 1)] *
+                this.params.heightScale *
+                100;
+              const h3 =
+                this.heights[(y + 1) * this.resolution + x] *
+                this.params.heightScale *
+                100;
+              const h4 =
+                this.heights[(y + 1) * this.resolution + (x + 1)] *
+                this.params.heightScale *
+                100;
+
+              // Transform world coordinates
+              const worldX = (x - this.resolution / 2) * scale;
+              const worldY = (y - this.resolution / 2) * scale;
+              const worldX2 = (x + 1 - this.resolution / 2) * scale;
+              const worldY2 = (y + 1 - this.resolution / 2) * scale;
+
+              // Apply rotations and project to screen
+              const project = (wx, wy, wz) => {
+                // Rotate around Y axis
+                let px = wx * cosY - wy * sinY;
+                let py = wx * sinY + wy * cosY;
+                let pz = wz;
+
+                // Rotate around X axis
+                let rx = px;
+                let ry = py * cosX - pz * sinX;
+                let rz = py * sinX + pz * cosX;
+
+                // Isometric projection
+                const screenX = centerX + (rx - ry) * cos;
+                const screenY = centerY + (rx + ry) * sin - rz;
+
+                return { x: screenX, y: screenY, z: rz };
+              };
+
+              const p1 = project(worldX, worldY, h1);
+              const p2 = project(worldX2, worldY, h2);
+              const p3 = project(worldX, worldY2, h3);
+              const p4 = project(worldX2, worldY2, h4);
+
+              // Calculate average depth for sorting
+              const avgZ = (p1.z + p2.z + p3.z + p4.z) / 4;
+              const avgHeight =
+                (h1 + h2 + h3 + h4) / 4 / 100 / this.params.heightScale;
+
+              points.push({
+                points: [p1, p2, p4, p3], // Quad vertices
+                depth: avgZ,
+                height: avgHeight,
+              });
+            }
+          }
+
+          // Sort by depth (back to front)
+          points.sort((a, b) => a.depth - b.depth);
+
+          // Render all quads
+          points.forEach((quad) => {
+            const [r, g, b] = this.getTerrainColor(quad.height);
+
+            // Add some depth-based shading
+            const shade = Math.max(0.3, 1 - (quad.depth + 200) / 400);
+
+            this.ctx.fillStyle = `rgb(${Math.floor(r * shade)}, ${Math.floor(
+              g * shade
+            )}, ${Math.floor(b * shade)})`;
+            this.ctx.strokeStyle = `rgb(${Math.floor(
+              r * shade * 0.7
+            )}, ${Math.floor(g * shade * 0.7)}, ${Math.floor(
+              b * shade * 0.7
+            )})`;
+            this.ctx.lineWidth = 0.5;
+
+            this.ctx.beginPath();
+            this.ctx.moveTo(quad.points[0].x, quad.points[0].y);
+            for (let i = 1; i < quad.points.length; i++) {
+              this.ctx.lineTo(quad.points[i].x, quad.points[i].y);
+            }
+            this.ctx.closePath();
+            this.ctx.fill();
+            this.ctx.stroke();
+          });
+        }
+      }
+
+      // Initialize when DOM is ready
+      document.addEventListener("DOMContentLoaded", () => {
+        console.log("DOM loaded, initializing...");
+        try {
+          new HeightsGenerator();
+        } catch (error) {
+          console.error("Failed to initialize HeightsGenerator:", error);
+        }
+      });
+    </script>
+  </body>
+</html>
