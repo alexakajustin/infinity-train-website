@@ -254,7 +254,7 @@
           <div class="slider-container">
             <div class="slider-label">
               <span>Asymmetry Strength</span>
-              <span id="asymmetryValue">0.3</span>
+              <span id="asymmetryStrengthValue">0.3</span>
             </div>
             <input
               type="range"
@@ -272,7 +272,7 @@
           <div class="slider-container">
             <div class="slider-label">
               <span>Falloff Distance</span>
-              <span id="falloffValue">0.25</span>
+              <span id="falloffDistanceValue">0.25</span>
             </div>
             <input
               type="range"
@@ -290,7 +290,7 @@
           <div class="slider-container">
             <div class="slider-label">
               <span>Height Scale</span>
-              <span id="heightScaleValue">1.0</span>
+              <span id="heightScaleValue">0.3</span>
             </div>
             <input
               type="range"
@@ -298,16 +298,16 @@
               min="0.1"
               max="1"
               step="0.05"
-              value="1.0"
+              value="0.3"
             />
             <div class="tip">Adjusts vertical exaggeration in 3D mode</div>
           </div>
           <div class="slider-container">
             <div class="slider-label">
               <span>View Angle</span>
-              <span id="viewAngleValue">10</span>
+              <span id="viewAngleValue">18</span>
             </div>
-            <input type="range" id="viewAngle" min="0" max="90" value="45" />
+            <input type="range" id="viewAngle" min="0" max="90" value="18" />
             <div class="tip">Camera angle for isometric view</div>
           </div>
         </div>
@@ -360,8 +360,8 @@
             falloffDistance: 0.25,
             enableAsymmetry: true,
             enableFalloff: true,
-            heightScale: 1.0,
-            viewAngle: 10,
+            heightScale: 0.3,
+            viewAngle: 18,
           };
 
           console.log("HeightsGenerator initialized");
